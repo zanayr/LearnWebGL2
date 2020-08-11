@@ -1,0 +1,8 @@
+# DIRECTORIES
+/public/
+
+# FILES
+*.txt
+
+# MISC
+.DS_Store
