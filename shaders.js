@@ -6,8 +6,10 @@ class Shader {
             this.gl = context;
             this.gl.useProgram(this.program);
             this.attribLocation = ShaderUtil.getStandardAttribLocations(context, this.program);
-            this.uniformLocation = {};
+            this.uniformLocation = ShaderUtil.getStandardUnifromLocations(context, this.program);
         }
+
+        // NOTE: Extended shaders should deactive shader when done calling super and setting up custom parts in the constructor
     }
 
     // Methods
@@ -19,6 +21,20 @@ class Shader {
         this.gl.useProgram(null);
         return this;
     }
+
+    setPerspective(data) {
+        this.gl.uniformMatrix4fv(this.uniformLocation.perspective, false, data);
+        return this;
+    }
+    setModalMatrix(data) {
+        this.gl.uniformMatrix4fv(this.uniformLocation.modalMatrix, false, data);
+        return this;
+    }
+    setCameraMatrix(data) {
+        this.gl.uniformMatrix4fv(this.uniformLocation.cameraMatrix, false, data);
+        return this;
+    }
+
     dispose() {
         if (this.gl.getParameter(this.gt.CURRENT_PROGRAM) === this.program) this.gl.useProgram(null);
         this.gl.deleteProgram(this.program);
@@ -29,7 +45,8 @@ class Shader {
 
     // Handle rendering a modal
     renderModal(modal) {
-        this.gl.bindVertexArray(modal.mesh.vao);
+        this.setModalMatrix(modal.transform.getViewMatrix()); // Set the transform, so the shader knows where the modal exists in 3d space
+        this.gl.bindVertexArray(modal.mesh.vao);              // Enable VAO, this will set all the predefined attributes for the shader
 
         if (modal.mesh.indexCount) {
             this.gl.drawElements(modal.mesh.drawMode, modal.mesh.indexLength, gl.UNSIGNED_SHORT, 0);
@@ -38,6 +55,7 @@ class Shader {
         }
 
         this.gl.bindVertexArray(null);
+
         return this;
     }
 }
@@ -138,6 +156,15 @@ class ShaderUtil {
             position: context.getAttribLocation(program, POSITION_NAME),
             normal: context.getAttribLocation(program, NORMAL_NAME),
             uv: context.getAttribLocation(program, UV_NAME),
+        };
+    }
+
+    static getStandardUnifromLocations(context, program) {
+        return {
+            perspective: context.getUniformLocation(program, 'u_perspectiveMatrix'),
+            modalMatrix: context.getUniformLocation(program, 'u_modalViewMatrix'),
+            cameraMatrix: context.getUniformLocation(program, 'u_cameraMatrix'),
+            mainTexture: context.getUniformLocation(program, 'u_mainTexture'),
         };
     }
 }
