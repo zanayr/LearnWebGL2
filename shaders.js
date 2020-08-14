@@ -161,7 +161,7 @@ class ShaderUtil {
 
     static getStandardUnifromLocations(context, program) {
         return {
-            perspective: context.getUniformLocation(program, 'u_perspectiveMatrix'),
+            perspective: context.getUniformLocation(program, 'u_projectionMatrix'),
             modalMatrix: context.getUniformLocation(program, 'u_modalViewMatrix'),
             cameraMatrix: context.getUniformLocation(program, 'u_cameraMatrix'),
             mainTexture: context.getUniformLocation(program, 'u_mainTexture'),

@@ -1,6 +1,7 @@
 const primatives = {};
 primatives.GridAxis = class {
-    static createMesh(context) {
+    static createModal(context, axis) { return new Modal(primatives.GridAxis.createMesh(context, axis)); }
+    static createMesh(context, axis=false) {
         const vertices = [];
         const size = 1.8;
         const divisions = 10;
@@ -14,25 +15,58 @@ primatives.GridAxis = class {
         for (let i = 0; i <= divisions; i++) {
             temp = -half + ( i * step);
             vertices.push(temp);
+            vertices.push(0.0);
             vertices.push(half);
-            vertices.push(0.0);
-            vertices.push(0.0);
+            vertices.push(0);
 
             vertices.push(temp);
-            vertices.push(-half);
             vertices.push(0.0);
-            vertices.push(1.0);
+            vertices.push(-half);
+            vertices.push(0);
 
             temp = half - ( i * step);
             vertices.push(-half);
+            vertices.push(0.0);
             vertices.push(temp);
-            vertices.push(0.0);
-            vertices.push(0.0);
+            vertices.push(0);
 
             vertices.push(half);
-            vertices.push(temp);
             vertices.push(0.0);
-            vertices.push(3.0);
+            vertices.push(temp);
+            vertices.push(0);
+        }
+
+        if (axis) {
+            // x axis
+            vertices.push(-1.1);
+            vertices.push(0.0);
+            vertices.push(0.0);
+            vertices.push(1);
+            
+            vertices.push(1.1);
+            vertices.push(0.0);
+            vertices.push(0.0);
+            vertices.push(1);
+            // y axis
+            vertices.push(0.0);
+            vertices.push(-1.1);
+            vertices.push(0.0);
+            vertices.push(2);
+            
+            vertices.push(0.0);
+            vertices.push(1.1);
+            vertices.push(0.0);
+            vertices.push(2);
+            // z axis
+            vertices.push(0.0);
+            vertices.push(0.0);
+            vertices.push(-1.1);
+            vertices.push(3);
+            
+            vertices.push(0.0);
+            vertices.push(0.0);
+            vertices.push(1.1);
+            vertices.push(3);
         }
 
         mesh.verticesLength = 4;
