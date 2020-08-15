@@ -1,4 +1,62 @@
 const primatives = {};
+primatives.Quad = class {
+    static createModal(gl) { return new Modal(primatives.Quad.createMesh(gl)); }
+    static createMesh(gl) {
+        const vertices = [
+            -0.5,  0.5, 0.0,
+            -0.5, -0.5, 0.0,
+             0.5, -0.5, 0.0,
+             0.5,  0.5, 0.0,
+        ];
+        const uvs = [
+            0.0, 0.0,
+            0.0, 1.0,
+            1.0, 1.0,
+            1.0, 0.0,
+        ];
+        const indices = [ 0, 1, 2, 2, 3, 0 ];
+        const mesh = gl.fCreateMeshVAO("Quad", indices, vertices, null, uvs);
+        mesh.noCulling = true;
+        mesh.doBlending = true;
+        return mesh;
+    }
+}
+
+primatives.MultiQuad = class {
+    static createModal(gl) { return new Modal(primatives.MultiQuad.createMesh(gl)); }
+    static createMesh(gl) {
+        const vertices = [];
+        const uvs = [];
+        const indices = [];
+
+        for (let i = 0; i < 10; i++) {
+            // Calculate a random size, y rotation and position for the quad
+            let size = 0.2 + (0.8 * Math.random());     // quad size
+            let half = size * 0.5;                      // radius of rotations
+            let angle = Math.PI * 2 * Math.random();    // random angle between 0 and 2 radians
+            let dx = half * Math.cos(angle);            // x offset
+            let dy = half * Math.sin(angle);            // y offset
+            let x = -2.5 + (Math.random() * 5);
+            let y = -2.5 + (Math.random() * 5);
+            let z = 2.5 - (Math.random() * 5);
+            let p = i * 4;                              // index of the first vertex of a quad
+
+            vertices.push(x - dx, y + half, z - dy); // top left
+            vertices.push(x - dx, y - half, z - dy); // bottom left
+            vertices.push(x + dx, y - half, z + dy); // bottom right
+            vertices.push(x + dx, y + half, z + dy); // top right
+
+            uvs.push(0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0);
+            indices.push(p, p + 1, p + 2, p + 2, p + 3, p);
+        }
+
+        const mesh = gl.fCreateMeshVAO("MultiQuad", indices, vertices, null, uvs);
+        mesh.noCulling = true;
+        mesh.doBlending = true;
+        return mesh;
+    }
+}
+
 primatives.GridAxis = class {
     static createModal(context, axis) { return new Modal(primatives.GridAxis.createMesh(context, axis)); }
     static createMesh(context, axis=false) {

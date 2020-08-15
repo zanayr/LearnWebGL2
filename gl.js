@@ -17,7 +17,13 @@ function GLInstance(canvasId) {
     gl.mMeshCache = []; // Cache all the mesh structs
 
     // Setup GL, Set all the defualt configurations we need.
-    gl.clearColor(1.0, 1.0, 1.0, 1.0); // set color
+    gl.cullFace(gl.BACK);                                   // back is also default
+    gl.frontFace(gl.CCW);                                   // don't reall need to set it, it's ccw by default
+    gl.enable(gl.DEPTH_TEST);                               // fragment pixels closer to camera overrides further ones
+    gl.enable(gl.CULL_FACE);                                // cull back face, so only show triangles that are created clockwise
+    gl.depthFunc(gl.LEQUAL);                                // near things obsucre far things
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);     // setup default alpha blending
+    gl.clearColor(1.0, 1.0, 1.0, 1.0);                      // set color
 
     // Methods
     gl.fClear = function() {
@@ -76,14 +82,15 @@ function GLInstance(canvasId) {
         if (indices) {
             vao.indicesBuffer = this.createBuffer();
             vao.indicesCount = indices.length;
-            this.bindBuffer(this.ARRAY_BUFFER, vao.indicesBuffer);
-            this.bufferData(this.ARRAY_BUFFER, new Uint16Array(indices), this.STATIC_DRAW);
-            this.bindBuffer(this.ARRAY_BUFFER, null);
+            this.bindBuffer(this.ELEMENT_ARRAY_BUFFER, vao.indicesBuffer);
+            this.bufferData(this.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), this.STATIC_DRAW);
+            // this.bindBuffer(this.ARRAY_BUFFER, null);
         }
 
         // Clean up
         this.bindVertexArray(null);
         this.bindBuffer(this.ARRAY_BUFFER, null);
+        if (indices) this.bindBuffer(this.ELEMENT_ARRAY_BUFFER, null);
 
         this.mMeshCache[name] = vao;
         return vao;

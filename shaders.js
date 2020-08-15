@@ -48,13 +48,18 @@ class Shader {
         this.setModalMatrix(modal.transform.getViewMatrix()); // Set the transform, so the shader knows where the modal exists in 3d space
         this.gl.bindVertexArray(modal.mesh.vao);              // Enable VAO, this will set all the predefined attributes for the shader
 
-        if (modal.mesh.indexCount) {
-            this.gl.drawElements(modal.mesh.drawMode, modal.mesh.indexLength, gl.UNSIGNED_SHORT, 0);
+        if (modal.mesh.noCulling) this.gl.disable(this.gl.CULL_FACE);
+        if (modal.mesh.doBlending) this.gl.enable(this.gl.BLEND);
+
+        if (modal.mesh.indicesCount) {
+            this.gl.drawElements(modal.mesh.drawMode, modal.mesh.indicesCount, gl.UNSIGNED_SHORT, 0);
         } else {
             this.gl.drawArrays(modal.mesh.drawMode, 0, modal.mesh.verticesCount);
         }
 
         this.gl.bindVertexArray(null);
+        if (modal.mesh.noCulling) this.gl.enable(this.gl.CULL_FACE);
+        if (modal.mesh.doBlending) this.gl.disable(this.gl.BLEND);
 
         return this;
     }

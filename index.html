@@ -25,6 +25,7 @@
             let loop;
             let shader;
             let modal;
+            let modal2;
             let camera;
             let controller;
             let gridShader;
@@ -39,21 +40,16 @@
                 camera.transform.position.set(0.0, 1.0, 3.0);
                 controller = new CameraController(gl, camera);
                 
-                // Set up grid
+                // Setup grid
                 gridShader = new GridAxisShader(gl, camera.projectionMatrix);
                 gridModal = primatives.GridAxis.createModal(gl, true);
 
-                // Set up test shader
-                // shader = new TestShader(gl, [
-                //     0.8, 0.8, 0.8, // gray
-                //     1.0, 0.0, 0.0, // red
-                //     0.0, 1.0, 0.0, // green
-                //     0.0, 0.0, 1.0, // blue
-                // ]);
-                // shader.activate().setPerspective(camera.projectionMatrix).deactivate();
+                // Setup test shader, modal and meshes
+                shader = new TestShader(gl, camera.projectionMatrix);
+                modal = primatives.MultiQuad.createModal(gl);
+                // modal.setPosition(0.0, 1.0, 0.0).setScale(0.2, 0.2, 0.2);
 
-                // Set up modal
-                // modal = new Modal(primatives.GridAxis.createMesh(gl, true));
+                // modal2 = new Modal(gl.mMeshCache["Quad"]); // extra, show 2 modals sharing one mesh
 
                 // Set up for render
                 loop = new Loop(render);
@@ -67,23 +63,61 @@
                 gridShader.activate()
                     .setCameraMatrix(camera.viewMatrix)
                     .renderModal(gridModal.preRender());
+
+                shader.activate()
+                    .setCameraMatrix(camera.viewMatrix)
+                    .renderModal( modal.preRender() )
+                    // .renderModal( modal2.preRender() );
             }
 
             class TestShader extends Shader {
-                constructor(context, colors) {
+                constructor(context, matrix) {
                     super(context, ShaderUtil.loadShader("vertex"), ShaderUtil.loadShader("fragment"));
 
-                    // Our shader uses custom uniforms
-                    const uColor = context.getUniformLocation(this.program, 'u_color');
-                    context.uniform3fv(uColor, colors);
-
+                    this.setPerspective(matrix);
                     context.useProgram(null);
                 }
             }
         </script>
-        <script id="vertex" type="x-shader/x-vertex">
+        <script id="vertex" type="x-shader/x-vertex">#version 300 es
+            in vec3 a_position;
+            in vec2 a_uv;
+
+            uniform mat4 u_projectionMatrix;
+            uniform mat4 u_cameraMatrix;
+            uniform mat4 u_modalViewMatrix;
+
+            out vec2 uv;
+
+            void main(void) {
+                uv = a_uv;
+                gl_Position = u_projectionMatrix * u_cameraMatrix * u_modalViewMatrix * vec4(a_position, 1.0);
+            }
         </script>
-        <script id="fragment" type="x-shader/x-fragment">
+        <script id="fragment" type="x-shader/x-fragment">#version 300 es
+            precision mediump float;
+
+            in vec2 uv;
+
+            out vec4 final;
+
+            void main(void) {
+                float color = (uv.x <= 0.1 || uv.x >= 0.9 || uv.y <= 0.1 || uv.y >= 0.9) ? 0.0 : 1.0;
+                final = vec4(color, color, color, 1.0 - color);
+
+                // Circle
+                /*
+                vec2 delta = uv - vec2(0.5, 0.5); // delta position from center
+                float distance = 0.5 - sqrt(delta.x * delta.x + delta.y * delta.y);
+
+                float border = 0.01;
+                float alpha = 0.0;
+                if (distance > border) alpha = 1.0;
+                else if (distance > 0.0) alpha = distance / border;
+
+                final = vec4(0.0, 0.0, 0.0, alpha);
+                */
+            }
         </script>
     </body>
 </html>
