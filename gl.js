@@ -5,6 +5,43 @@ const NORMAL_LOCATION = 1;
 const UV_NAME = "a_uv";
 const UV_LOCATION = 2;
 
+class GlUtil {
+    // static rgbArray() {
+    //     const color = [];
+    //     if (arguments.length === 0) return null;
+        
+    //     for (let i = 0, c, p, len = arguments.length; i < len; i++) {
+    //         if (arguments[i].length < 6) continue;
+    //         c = arguments[i];
+    //         p = (c[0] === '#') ? 1 : 0;
+    //         color.push(
+    //             parseInt(c[p] + c[p + 1], 16) / 255,
+    //             parseInt(c[p + 2] + c[p + 3], 16) / 255,
+    //             parseInt(c[p + 4] + c[p + 5], 16) / 255,
+    //         );
+    //     }
+
+    //     return color;
+    // }
+    static rgbArray(){
+		if(arguments.length == 0) return null;
+		var rtn = [];
+
+		for(var i=0,c,p; i < arguments.length; i++){
+			if(arguments[i].length < 6) continue;
+			c = arguments[i];		//Just an alias(copy really) of the color text, make code smaller.
+			p = (c[0] == "#")?1:0;	//Determine starting position in char array to start pulling from
+
+			rtn.push(
+				parseInt(c[p]	+c[p+1],16)	/ 255.0,
+				parseInt(c[p+2]	+c[p+3],16)	/ 255.0,
+				parseInt(c[p+4]	+c[p+5],16)	/ 255.0
+			);
+		}
+		return rtn;
+	}
+}
+
 function GLInstance(canvasId) {
     const canvas = document.getElementById(canvasId);
     const gl = canvas.getContext('webgl2');
@@ -14,7 +51,8 @@ function GLInstance(canvasId) {
         return null;
     }
 
-    gl.mMeshCache = []; // Cache all the mesh structs
+    gl.mMeshCache = []; // cache all the mesh structs
+    gl.mTextureCache = []; // cache all the textures
 
     // Setup GL, Set all the defualt configurations we need.
     gl.cullFace(gl.BACK);                                   // back is also default
@@ -41,7 +79,7 @@ function GLInstance(canvasId) {
         return buffer;
     };
 
-    gl.fCreateMeshVAO = function(name, indices, vertices, normals, uvs) {
+    gl.fCreateMeshVAO = function(name, indices, vertices, normals, uvs, verticesLength=3) {
         const vao = { drawMode: this.TRIANGLES };
 
         // Create and bind vao
@@ -51,13 +89,13 @@ function GLInstance(canvasId) {
         // Set up vertices
         if (vertices) {
             vao.verticesBuffer = this.createBuffer();
-            vao.verticesLength = 3;
+            vao.verticesLength = verticesLength;
             vao.verticesCount = vertices.length / vao.verticesLength;
 
             this.bindBuffer(this.ARRAY_BUFFER, vao.verticesBuffer);
             this.bufferData(this.ARRAY_BUFFER, new Float32Array(vertices), this.STATIC_DRAW);
             this.enableVertexAttribArray(POSITION_LOCATION);
-            this.vertexAttribPointer(POSITION_LOCATION, 3, this.FLOAT, false, 0, 0);
+            this.vertexAttribPointer(POSITION_LOCATION, vao.verticesLength, this.FLOAT, false, 0, 0);
         }
 
         // Set up normals
@@ -84,7 +122,6 @@ function GLInstance(canvasId) {
             vao.indicesCount = indices.length;
             this.bindBuffer(this.ELEMENT_ARRAY_BUFFER, vao.indicesBuffer);
             this.bufferData(this.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), this.STATIC_DRAW);
-            // this.bindBuffer(this.ARRAY_BUFFER, null);
         }
 
         // Clean up
@@ -96,6 +133,23 @@ function GLInstance(canvasId) {
         return vao;
     }
 
+    gl.fLoadTexture = function(name, image, yFlip) {
+        const texture = this.createTexture();
+        if (yFlip) this.pixelStorei(this.UNPACK_FLIP_Y_WEBGL, true); // flip the texture by the y position
+
+        this.bindTexture(this.TEXTURE_2D, texture);
+        this.texImage2D(this.TEXTURE_2D, 0, this.RGBA, this.RGBA, this.UNSIGNED_BYTE, image);
+
+        this.texParameteri(this.TEXTURE_2D, this.TEXTURE_MAG_FILTER, this.LINEAR);                   // setup up-scaling
+        this.texParameteri(this.TEXTURE_2D, this.TEXTURE_MIN_FILTER, this.LINEAR_MIPMAP_NEAREST);    // setup down-scaling
+        this.generateMipmap(this.TEXTURE_2D);
+
+        this.bindTexture(this.TEXTURE_2D, null);
+        this.mTextureCache[name] = texture;
+
+        if (yFlip) this.pixelStorei(this.UNPACK_FLIP_Y_WEBGL, false); // stop flipping textures
+        return texture;
+    }
     // Setters and Getters
 
     // Set the size of the canvas html element and the rendering viewport

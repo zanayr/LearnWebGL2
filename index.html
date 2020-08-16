@@ -10,6 +10,7 @@
     <body>
         <div>
             <canvas id="canvas"></canvas>
+            <img src="./grid.jpg" id="texture001" style="display: none;">
         </div>
         <script src="./gl.js"></script>
         <script src="./Math.js"></script>
@@ -39,17 +40,20 @@
                 camera = new Camera(gl);
                 camera.transform.position.set(0.0, 1.0, 3.0);
                 controller = new CameraController(gl, camera);
+
+                // Load up resources
+                // gl.fLoadTexture('texture001', document.getElementById('texture001'));
                 
                 // Setup grid
                 gridShader = new GridAxisShader(gl, camera.projectionMatrix);
-                gridModal = primatives.GridAxis.createModal(gl, true);
+                gridModal = primatives.GridAxis.createModal(gl, false);
 
                 // Setup test shader, modal and meshes
                 shader = new TestShader(gl, camera.projectionMatrix);
-                modal = primatives.MultiQuad.createModal(gl);
-                // modal.setPosition(0.0, 1.0, 0.0).setScale(0.2, 0.2, 0.2);
+                    // .setTexture(gl.mTextureCache['texture001']);
 
-                // modal2 = new Modal(gl.mMeshCache["Quad"]); // extra, show 2 modals sharing one mesh
+                modal = primatives.Cube.createModal(gl);
+                modal.setPosition(0.0, 0.6, 0.0);
 
                 // Set up for render
                 loop = new Loop(render);
@@ -65,58 +69,84 @@
                     .renderModal(gridModal.preRender());
 
                 shader.activate()
+                    // .preRender()
                     .setCameraMatrix(camera.viewMatrix)
+                    .setTime(performance.now())
                     .renderModal( modal.preRender() )
-                    // .renderModal( modal2.preRender() );
             }
 
             class TestShader extends Shader {
                 constructor(context, matrix) {
                     super(context, ShaderUtil.loadShader("vertex"), ShaderUtil.loadShader("fragment"));
-
+                    const uColor = gl.getUniformLocation(this.program, 'u_color');
+                    gl.uniform3fv(uColor, new Float32Array( GlUtil.rgbArray('#ff0000', '00ff00', '0000ff', 'ffff00', '00ffff', 'ff00ff')));
+                    this.uniformLocation.time = gl.getUniformLocation(this.program, 'u_time');
                     this.setPerspective(matrix);
+
+                    this.mainTexture = -1; // store our texture ID
                     context.useProgram(null);
+                }
+
+                setTime(ts) {
+                    this.gl.uniform1f(this.uniformLocation.time, ts);
+                    return this;
+                }
+
+                setTexture(textureId) {
+                    this.mainTexture = textureId;
+                    return this;
+                }
+
+                preRender() {
+                    // Set up texture
+                    this.gl.activeTexture(this.gl.TEXTURE0); // set which texture slot we are using
+                    this.gl.bindTexture(this.gl.TEXTURE_2D, this.mainTexture);
+                    // Our predefined uniformLocation.mainTexture is uMainTexture,
+                    // previous lessons we made ShaderUtil.getStandardUniformLocation()
+                    // function in shaders.js to get its location
+                    this.gl.uniform1i(this.uniformLocation.mainTexture, 0);
+
+                    return this;
                 }
             }
         </script>
         <script id="vertex" type="x-shader/x-vertex">#version 300 es
-            in vec3 a_position;
+            in vec4 a_position; // making it a vec4 to include color
+            in vec3 a_normal;
             in vec2 a_uv;
 
             uniform mat4 u_projectionMatrix;
             uniform mat4 u_cameraMatrix;
             uniform mat4 u_modalViewMatrix;
+            uniform vec3 u_color[6];
+            uniform float u_time;
 
-            out vec2 uv;
+            out lowp vec4 color;
+            out highp vec2 texCoord; // interpolate uv values to the fragment shader
+
+            vec3 warp(vec3 p) {
+                return p + 0.2 * abs(cos(u_time * 0.002)) * a_normal;
+            }
 
             void main(void) {
-                uv = a_uv;
-                gl_Position = u_projectionMatrix * u_cameraMatrix * u_modalViewMatrix * vec4(a_position, 1.0);
+                texCoord = a_uv;
+                color = vec4(u_color[int(a_position.w)], 1.0);
+                gl_Position = u_projectionMatrix * u_cameraMatrix * u_modalViewMatrix * vec4(warp(a_position.xyz), 1.0);
             }
         </script>
         <script id="fragment" type="x-shader/x-fragment">#version 300 es
             precision mediump float;
 
-            in vec2 uv;
+            in vec4 color;
+            in highp vec2 texCoord;
+            
+            uniform sampler2D u_mainTexture;
 
             out vec4 final;
 
             void main(void) {
-                float color = (uv.x <= 0.1 || uv.x >= 0.9 || uv.y <= 0.1 || uv.y >= 0.9) ? 0.0 : 1.0;
-                final = vec4(color, color, color, 1.0 - color);
-
-                // Circle
-                /*
-                vec2 delta = uv - vec2(0.5, 0.5); // delta position from center
-                float distance = 0.5 - sqrt(delta.x * delta.x + delta.y * delta.y);
-
-                float border = 0.01;
-                float alpha = 0.0;
-                if (distance > border) alpha = 1.0;
-                else if (distance > 0.0) alpha = distance / border;
-
-                final = vec4(0.0, 0.0, 0.0, alpha);
-                */
+                final = color;
+                //final = texture(u_mainTexture, vec2(texCoord.s, texCoord.t)); // get the color of the pixel at that uv location
             }
         </script>
     </body>

@@ -1,4 +1,70 @@
 const primatives = {};
+
+primatives.Cube = class {
+    static createModal(gl) { return new Modal(primatives.Cube.createMesh(gl, 1, 1, 1, 0, 0, 0)); }
+    static createMesh(gl, width, height, depth, x, y, z) {
+        const w = width * 0.5;
+        const h = height * 0.5;
+        const d = depth * 0.5;
+        const x0 = x - w;
+        const x1 = x + w;
+        const y0 = y - h;
+        const y1 = y + h;
+        const z0 = z - d;
+        const z1 = z + d;
+        const vertices = [
+            x0, y1, z1, 0,
+            x0, y0, z1, 0,
+            x1, y0, z1, 0,
+            x1, y1, z1, 0,
+
+            x1, y1, z0, 1,
+            x1, y0, z0, 1,
+            x0, y0, z0, 1,
+            x0, y1, z0, 1,
+
+            x0, y1, z0, 2,
+            x0, y0, z0, 2,
+            x0, y0, z1, 2,
+            x0, y1, z1, 2,
+
+            x0, y0, z1, 3,
+            x0, y0, z0, 3,
+            x1, y0, z0, 3,
+            x1, y0, z1, 3,
+
+            x1, y1, z1, 4,
+            x1, y0, z1, 4,
+            x1, y0, z0, 4,
+            x1, y1, z0, 4,
+
+            x0, y1, z0, 5,
+            x0, y1, z1, 5,
+            x1, y1, z1, 5,
+            x1, y1, z0, 5,
+        ];
+
+        const uvs = [];
+        for (let i = 0; i < 6; i++) uvs.push(0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0);
+
+        const indices = [];
+        for (let i = 0, len = vertices.length / 4; i < len; i+=2) indices.push(i, i + 1, (Math.floor(i / 4) * 4) + ((i + 2) % 4));
+        
+        const normals = [
+             0.0,  0.0,  1.0,  0.0,  0.0,  1.0,  0.0,  0.0,  1.0,  0.0,  0.0,  1.0,
+             0.0,  0.0, -1.0,  0.0,  0.0, -1.0,  0.0,  0.0, -1.0,  0.0,  0.0, -1.0,
+            -1.0,  0.0,  0.0, -1.0,  0.0,  0.0, -1.0,  0.0,  0.0, -1.0,  0.0,  0.0,
+             0.0, -1.0,  0.0,  0.0, -1.0,  0.0,  0.0, -1.0,  0.0,  0.0, -1.0,  0.0,
+             1.0,  0.0,  0.0,  1.0,  0.0,  0.0,  1.0,  0.0,  0.0,  1.0,  0.0,  0.0,
+             0.0,  1.0,  0.0,  0.0,  1.0,  0.0,  0.0,  1.0,  0.0,  0.0,  1.0,  0.0,
+        ];
+
+        const mesh = gl.fCreateMeshVAO("Cube", indices, vertices, normals, uvs, 4);
+        mesh.noCulling = true;
+        return mesh;
+    }
+}
+
 primatives.Quad = class {
     static createModal(gl) { return new Modal(primatives.Quad.createMesh(gl)); }
     static createMesh(gl) {
