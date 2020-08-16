@@ -150,6 +150,33 @@ function GLInstance(canvasId) {
         if (yFlip) this.pixelStorei(this.UNPACK_FLIP_Y_WEBGL, false); // stop flipping textures
         return texture;
     }
+
+    gl.fLoadCubeMap = function(name, images) {
+        if (images.length != 6) return null;
+
+        const texture = this.createTexture();
+        this.bindTexture(this.TEXTURE_CUBE_MAP, texture);
+
+        // Cube constants values increment, so starting with
+        // right and iterating six times completes all 6 sides
+
+        for (let i = 0; i < 6; i++) {
+            this.texImage2D(this.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, this.RGBA, this.RGBA, this.UNSIGNED_BYTE, images[i]);
+        }
+
+        this.texParameteri(this.TEXTURE_CUBE_MAP, this.TEXTURE_MAG_FILTER, this.LINEAR);    // set up scaling
+        this.texParameteri(this.TEXTURE_CUBE_MAP, this.TEXTURE_MIN_FILTER, this.LINEAR);    // set down scaling
+        this.texParameteri(this.TEXTURE_CUBE_MAP, this.TEXTURE_WRAP_S, this.CLAMP_TO_EDGE); // stretch image to x position
+        this.texParameteri(this.TEXTURE_CUBE_MAP, this.TEXTURE_WRAP_T, this.CLAMP_TO_EDGE); // stretch image to y position
+        this.texParameteri(this.TEXTURE_CUBE_MAP, this.TEXTURE_WRAP_R, this.CLAMP_TO_EDGE); // stretch image to z position
+
+        this.bindTexture(this.TEXTURE_CUBE_MAP, null);
+        this.mTextureCache[name] = texture;
+
+        return texture;
+    }
+
+
     // Setters and Getters
 
     // Set the size of the canvas html element and the rendering viewport

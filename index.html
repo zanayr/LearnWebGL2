@@ -11,6 +11,18 @@
         <div>
             <canvas id="canvas"></canvas>
             <img src="./grid.jpg" id="texture001" style="display: none;">
+            <img src="./skybox/miramar_back.png" id="skymap001-back" style="display: none;">
+            <img src="./skybox/miramar_front.png" id="skymap001-front" style="display: none;">
+            <img src="./skybox/miramar_bottom.png" id="skymap001-bottom" style="display: none;">
+            <img src="./skybox/miramar_left.png" id="skymap001-left" style="display: none;">
+            <img src="./skybox/miramar_right.png" id="skymap001-right" style="display: none;">
+            <img src="./skybox/miramar_top.png" id="skymap001-top" style="display: none;">
+            <img src="./skybox/grimmnight_back.png" id="skymap002-back" style="display: none;">
+            <img src="./skybox/grimmnight_front.png" id="skymap002-front" style="display: none;">
+            <img src="./skybox/grimmnight_bottom.png" id="skymap002-bottom" style="display: none;">
+            <img src="./skybox/grimmnight_left.png" id="skymap002-left" style="display: none;">
+            <img src="./skybox/grimmnight_right.png" id="skymap002-right" style="display: none;">
+            <img src="./skybox/grimmnight_top.png" id="skymap002-top" style="display: none;">
         </div>
         <script src="./gl.js"></script>
         <script src="./Math.js"></script>
@@ -24,13 +36,15 @@
         <script>
             let gl;
             let loop;
-            let shader;
-            let modal;
-            let modal2;
+            // let shader;
+            // let modal;
+            // let modal2;
             let camera;
             let controller;
             let gridShader;
             let gridModal;
+            let skymap;
+            let skymapShader;
 
             window.addEventListener("load", () => {
                 // Main setup
@@ -43,17 +57,42 @@
 
                 // Load up resources
                 // gl.fLoadTexture('texture001', document.getElementById('texture001'));
+
+                gl.fLoadCubeMap('skymap001', [
+                    document.getElementById('skymap001-right'),
+                    document.getElementById('skymap001-left'),
+                    document.getElementById('skymap001-top'),
+                    document.getElementById('skymap001-bottom'),
+                    document.getElementById('skymap001-back'),
+                    document.getElementById('skymap001-front'),
+                ]);
+                gl.fLoadCubeMap('skymap002', [
+                    document.getElementById('skymap002-right'),
+                    document.getElementById('skymap002-left'),
+                    document.getElementById('skymap002-top'),
+                    document.getElementById('skymap002-bottom'),
+                    document.getElementById('skymap002-back'),
+                    document.getElementById('skymap002-front'),
+                ]);
                 
                 // Setup grid
                 gridShader = new GridAxisShader(gl, camera.projectionMatrix);
-                gridModal = primatives.GridAxis.createModal(gl, false);
+                gridModal = primatives.GridAxis.createModal(gl, true);
 
                 // Setup test shader, modal and meshes
-                shader = new TestShader(gl, camera.projectionMatrix);
+                // shader = new TestShader(gl, camera.projectionMatrix);
                     // .setTexture(gl.mTextureCache['texture001']);
 
-                modal = primatives.Cube.createModal(gl);
-                modal.setPosition(0.0, 0.6, 0.0);
+                // modal = primatives.Cube.createModal(gl);
+                // modal.setPosition(0.0, 0.6, 0.0);
+
+                skymap = new Modal(primatives.Cube.createMesh(gl, 'Skymap', 10, 10, 10, 0, 0, 0));
+                skymapShader = new SkymapShader(
+                    gl,
+                    camera.projectionMatrix,
+                    gl.mTextureCache['skymap001'],
+                    gl.mTextureCache['skymap002']
+                );
 
                 // Set up for render
                 loop = new Loop(render);
@@ -62,17 +101,22 @@
 
             function render(d) {
                 camera.updateViewMatrix();
-
                 gl.fClear();
+
+                skymapShader.activate().preRender()
+                    .setCameraMatrix(camera.getTranslatelessMatrix())
+                    .setTime(performance.now())
+                    .renderModal(skymap);
+
                 gridShader.activate()
                     .setCameraMatrix(camera.viewMatrix)
                     .renderModal(gridModal.preRender());
 
-                shader.activate()
+                // shader.activate()
                     // .preRender()
-                    .setCameraMatrix(camera.viewMatrix)
-                    .setTime(performance.now())
-                    .renderModal( modal.preRender() )
+                    // .setCameraMatrix(camera.viewMatrix)
+                    // .setTime(performance.now())
+                    // .renderModal( modal.preRender() )
             }
 
             class TestShader extends Shader {
@@ -105,6 +149,39 @@
                     // previous lessons we made ShaderUtil.getStandardUniformLocation()
                     // function in shaders.js to get its location
                     this.gl.uniform1i(this.uniformLocation.mainTexture, 0);
+
+                    return this;
+                }
+            }
+
+            class SkymapShader extends Shader {
+                constructor(context, matrix, dayTexture, nightTexture) {
+                    super(context, ShaderUtil.loadShader("sky-vertex"), ShaderUtil.loadShader("sky-fragment"));
+
+                    this.uniformLocation.time = gl.getUniformLocation(this.program, 'u_time');
+                    this.uniformLocation.dayTexture = gl.getUniformLocation(this.program, 'u_dayTexture');
+                    this.uniformLocation.nightTexture = gl.getUniformLocation(this.program, 'u_nightTexture');
+
+                    this.setPerspective(matrix);
+                    this.dayTexture = dayTexture;
+                    this.nightTexture = nightTexture;
+
+                    gl.useProgram(null); // finished setting up shader
+                }
+
+                setTime(ts) {
+                    this.gl.uniform1f(this.uniformLocation.time, ts);
+                    return this;
+                }
+
+                preRender() {
+                    this.gl.activeTexture(this.gl.TEXTURE0);
+                    this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, this.dayTexture);
+                    this.gl.uniform1i(this.uniformLocation.dayTexture, 0);
+
+                    this.gl.activeTexture(this.gl.TEXTURE1);
+                    this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, this.nightTexture);
+                    this.gl.uniform1i(this.uniformLocation.nightTexture, 1);
 
                     return this;
                 }
@@ -147,6 +224,36 @@
             void main(void) {
                 final = color;
                 //final = texture(u_mainTexture, vec2(texCoord.s, texCoord.t)); // get the color of the pixel at that uv location
+            }
+        </script>
+        <script id="sky-vertex" type="x-shader/x-vertex">#version 300 es
+            in vec4 a_position;
+            in vec2 a_uv;
+
+            uniform mat4 u_projectionMatrix;
+            uniform mat4 u_cameraMatrix;
+            uniform mat4 u_modalViewMatrix;
+
+            out highp vec3 texCoord;
+
+            void main(void) {
+                texCoord = a_position.xyz;
+                gl_Position = u_projectionMatrix * u_cameraMatrix * vec4(a_position.xyz, 1.0);
+            }
+        </script>
+        <script id="sky-fragment" type="x-shader/x-fragment">#version 300 es
+            precision mediump float;
+
+            in highp vec3 texCoord;
+
+            uniform samplerCube u_dayTex;
+            uniform samplerCube u_nightCube;
+            uniform float u_time;
+
+            out vec4 final;
+
+            void main(void) {
+                final = mix(texture(u_dayTex, texCoord), texture(u_nightCube, texCoord), abs(sin(u_time * 0.005)));
             }
         </script>
     </body>

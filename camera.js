@@ -56,6 +56,12 @@ class Camera {
         Matrix4.invert(this.viewMatrix, this.transform.viewMatrix.raw);
         return this.viewMatrix;
     }
+
+    getTranslatelessMatrix() {
+        const matrix = new Float32Array(this.viewMatrix);
+        matrix[12] = matrix[13] = matrix[14] = 0.0; // reset the translation position in the maxtrix to 0
+        return matrix;
+    }
 }
 
 Camera.MODE_FREE = 0;

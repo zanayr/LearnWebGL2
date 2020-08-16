@@ -1,8 +1,8 @@
 const primatives = {};
 
 primatives.Cube = class {
-    static createModal(gl) { return new Modal(primatives.Cube.createMesh(gl, 1, 1, 1, 0, 0, 0)); }
-    static createMesh(gl, width, height, depth, x, y, z) {
+    static createModal(gl) { return new Modal(primatives.Cube.createMesh(gl, name='Cube', 1, 1, 1, 0, 0, 0)); }
+    static createMesh(gl, name, width, height, depth, x, y, z) {
         const w = width * 0.5;
         const h = height * 0.5;
         const d = depth * 0.5;
@@ -59,7 +59,7 @@ primatives.Cube = class {
              0.0,  1.0,  0.0,  0.0,  1.0,  0.0,  0.0,  1.0,  0.0,  0.0,  1.0,  0.0,
         ];
 
-        const mesh = gl.fCreateMeshVAO("Cube", indices, vertices, normals, uvs, 4);
+        const mesh = gl.fCreateMeshVAO(name, indices, vertices, normals, uvs, 4);
         mesh.noCulling = true;
         return mesh;
     }
